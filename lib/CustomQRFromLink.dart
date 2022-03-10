@@ -1,5 +1,7 @@
 import 'dart:core';
 
+import 'package:cross_file/cross_file.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:qr_code_generator/QR.dart';
@@ -17,9 +19,8 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
   final _formKey = GlobalKey<FormState>();
   static const defaultHex = "FF111111";
   Color color = Color(int.parse(defaultHex, radix: 16));
-
-  Color pickerColor = Color(0xff443a49);
-  Color currentColor = Color(0xff443a49);
+  Color pickerColor = Color(int.parse(defaultHex, radix: 16));
+  XFile? pickedFile;
 
   final TextEditingController linkTextEditingController =
       TextEditingController();
@@ -41,15 +42,41 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
     return Scaffold(
       body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 20.0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: SizedBox(
-                width: 200,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width / 4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Form(
+                      key: _formKey,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                MyTextFormField(
+                                  textEditingController:
+                                      linkTextEditingController,
+                                  hint: 'Enter QR code link',
+                                ),
+                                const SizedBox(height: 20),
+                                MyTextFormField(
+                                  textEditingController:
+                                      nameTextEditingController,
+                                  hint: 'Enter QR code image name',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 50),
                     MyTextFormField(
                       textEditingController: colorTextEditingController,
                       hint: 'Enter HEX color',
@@ -101,64 +128,62 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
                       ),
                     ),
                     Text("Value: ${color.value.toRadixString(16)}"),
+                    const SizedBox(height: 50),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        MaterialButton(
+                          onPressed: () async {
+                            FilePickerResult? result =
+                                await FilePicker.platform.pickFiles(
+                              type: FileType.image,
+                            );
+
+                            if (result != null && result.files.isNotEmpty) {
+                              final fileBytes = result.files.first.bytes;
+                              if (fileBytes != null) {
+                                setState(() {
+                                  pickedFile = XFile.fromData(fileBytes);
+                                });
+                              }
+                            } else {
+                              // User canceled the picker
+                            }
+                          },
+                          child: Text("Pick file"),
+                          color: Colors.blue,
+                        ),
+                        MaterialButton(
+                          onPressed: () {
+                            setState(() {
+                              pickedFile = null;
+                            });
+                          },
+                          child: Text("Clear file"),
+                          color: Colors.blue,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ),
           ),
-          Form(
-            key: _formKey,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              MyTextFormField(
-                                textEditingController:
-                                    linkTextEditingController,
-                                hint: 'Enter QR code link',
-                              ),
-                              const SizedBox(height: 20),
-                              MyTextFormField(
-                                textEditingController:
-                                    nameTextEditingController,
-                                hint: 'Enter QR code image name',
-                              ),
-                            ],
-                          ),
-                        ),
-                        MaterialButton(
-                          height: 100,
-                          onPressed: () {
-                            final currentState = _formKey.currentState;
-                            if (currentState != null &&
-                                _formKey.currentState!.validate()) {
-                              setState(() {});
-                            }
-                          },
-                          child: Text("Generate QR code"),
-                          color: Colors.blue,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  RepaintBoundary(
-                    key: globalKey,
-                    child: QR(
-                      message: linkTextEditingController.text,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 100),
-                ],
+          // FutureBuilder<Uint8List>(
+          //     future: pickedFile?.readAsBytes(),
+          //     builder: (context, snapshot) {
+          //       if (snapshot.hasData) {
+          //         return Image.memory(snapshot.data!);
+          //       }
+          //       return SizedBox();
+          //     }),
+          Center(
+            child: RepaintBoundary(
+              key: globalKey,
+              child: QR(
+                message: linkTextEditingController.text,
+                color: color,
+                file: pickedFile,
               ),
             ),
           ),

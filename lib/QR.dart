@@ -1,55 +1,61 @@
-// ignore_for_file: public_member_api_docs
-
 import 'dart:async';
+// import 'dart:io' if (dart.library.html) 'dart:html';
 import 'dart:ui' as ui;
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class QR extends StatelessWidget {
   final String message;
   final Color color;
+  final XFile? file;
 
   const QR({
     required this.message,
     required this.color,
+    this.file,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<ui.Image>(
-      future: _loadOverlayImage(),
+    return FutureBuilder<ui.Image?>(
+      future: _loadOverlayImage(file),
       builder: (ctx, snapshot) {
-        final size = 600.0;
-        if (!snapshot.hasData) {
-          return Container(width: size, height: size);
+        final size = MediaQuery.of(context).size.width / 2;
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
         }
-        return CustomPaint(
-          size: Size.square(size),
-          painter: QrPainter(
-            data: message,
-            version: QrVersions.auto,
-            eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: color),
-            dataModuleStyle: QrDataModuleStyle(
-              dataModuleShape: QrDataModuleShape.square,
-              color: color,
+        final image = snapshot.data;
+        return Container(
+          color: Colors.white,
+          child: CustomPaint(
+            size: Size.square(size),
+            painter: QrPainter(
+              data: message,
+              version: QrVersions.auto,
+              eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: color),
+              dataModuleStyle: QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: color,
+              ),
+              //Quality
+              errorCorrectionLevel: 3,
+              embeddedImage: image,
+              embeddedImageStyle: QrEmbeddedImageStyle(),
             ),
-            //Quality
-            errorCorrectionLevel: 3,
-            // size: 320.0,
-            embeddedImage: snapshot.data,
-            embeddedImageStyle: QrEmbeddedImageStyle(),
           ),
         );
       },
     );
   }
 
-  Future<ui.Image> _loadOverlayImage() async {
+  Future<ui.Image?> _loadOverlayImage(XFile? file) async {
+    if (file == null) return Future.value(null);
     final completer = Completer<ui.Image>();
-    final byteData = await rootBundle.load('assets/images/logo.png');
-    ui.decodeImageFromList(byteData.buffer.asUint8List(), completer.complete);
+    final bytes = await file.readAsBytes();
+    print(bytes.length);
+    ui.decodeImageFromList(bytes, completer.complete);
     return completer.future;
   }
 }
