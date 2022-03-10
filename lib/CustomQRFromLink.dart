@@ -1,14 +1,9 @@
 import 'dart:core';
-import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:qr_code_generator/QR.dart';
+import 'package:qr_code_generator/utils/save_image.dart';
 
 import 'app/MyTextField.dart';
 
@@ -17,83 +12,172 @@ class CustomQRFromLink extends StatefulWidget {
   _CustomQRFromLinkState createState() => _CustomQRFromLinkState();
 }
 
-class _CustomQRFromLinkState extends State<CustomQRFromLink> {
+class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
   final GlobalKey globalKey = GlobalKey();
   final _formKey = GlobalKey<FormState>();
+  static const defaultHex = "FF111111";
+  Color color = Color(int.parse(defaultHex, radix: 16));
 
-  TextEditingController textEditingController;
+  Color pickerColor = Color(0xff443a49);
+  Color currentColor = Color(0xff443a49);
 
-  @override
-  void initState() {
-    super.initState();
-    textEditingController = TextEditingController();
-  }
+  final TextEditingController linkTextEditingController =
+      TextEditingController();
+  final TextEditingController nameTextEditingController =
+      TextEditingController();
+  final TextEditingController colorTextEditingController =
+      TextEditingController();
 
   @override
   void dispose() {
     super.dispose();
-    textEditingController.dispose();
+    linkTextEditingController.dispose();
+    nameTextEditingController.dispose();
+    colorTextEditingController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        isExtended: true,
-        onPressed: () {
-          if (_formKey.currentState.validate()) {
-            _capturePng(
-              globalKey,
-              "Gift_10€",
-            );
-          }
-        },
-        child: const Text('Save'),
-      ),
-      body: Column(
+      body: Stack(
         children: [
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: MyTextFormField(
-                  formKey: _formKey,
-                  textEditingController: textEditingController,
+          Padding(
+            padding: const EdgeInsets.only(left: 20.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: 200,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    MyTextFormField(
+                      textEditingController: colorTextEditingController,
+                      hint: 'Enter HEX color',
+                      onChanged: (newValue) {
+                        setState(() {
+                          color = Color(
+                            int.tryParse("FF$newValue", radix: 16) ??
+                                int.parse(defaultHex, radix: 16),
+                          );
+                        });
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5.0),
+                      child: MaterialButton(
+                        height: 100,
+                        color: color,
+                        minWidth: double.infinity,
+                        onPressed: () {
+                          void changeColor(Color color) {
+                            setState(() => pickerColor = color);
+                          }
+
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Pick a color!'),
+                                content: SingleChildScrollView(
+                                  child: ColorPicker(
+                                    pickerColor: pickerColor,
+                                    onColorChanged: changeColor,
+                                  ),
+                                ),
+                                actions: <Widget>[
+                                  ElevatedButton(
+                                    child: const Text('Pick'),
+                                    onPressed: () {
+                                      setState(() => color = pickerColor);
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        child: Text("or tap to pick"),
+                      ),
+                    ),
+                    Text("Value: ${color.value.toRadixString(16)}"),
+                  ],
                 ),
               ),
-              MaterialButton(
-                onPressed: () => setState(() {}),
-                child: Text("Generate QR code"),
-                color: Colors.blue,
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 20),
-          RepaintBoundary(
-            key: globalKey,
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(20.0),
-              child: QR(
-                message: textEditingController.text,
+          Form(
+            key: _formKey,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              MyTextFormField(
+                                textEditingController:
+                                    linkTextEditingController,
+                                hint: 'Enter QR code link',
+                              ),
+                              const SizedBox(height: 20),
+                              MyTextFormField(
+                                textEditingController:
+                                    nameTextEditingController,
+                                hint: 'Enter QR code image name',
+                              ),
+                            ],
+                          ),
+                        ),
+                        MaterialButton(
+                          height: 100,
+                          onPressed: () {
+                            final currentState = _formKey.currentState;
+                            if (currentState != null &&
+                                _formKey.currentState!.validate()) {
+                              setState(() {});
+                            }
+                          },
+                          child: Text("Generate QR code"),
+                          color: Colors.blue,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  RepaintBoundary(
+                    key: globalKey,
+                    child: QR(
+                      message: linkTextEditingController.text,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 100),
+                ],
               ),
             ),
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        isExtended: true,
+        onPressed: () {
+          final currentState = _formKey.currentState;
+          if (currentState != null && _formKey.currentState!.validate()) {
+            saveImage(
+              globalKey: globalKey,
+              title: nameTextEditingController.text,
+              context: context,
+            );
+          }
+        },
+        child: const Text('Save'),
+      ),
     );
-  }
-
-  Future<void> _capturePng(GlobalKey globalKey, String title) async {
-    RenderRepaintBoundary boundary =
-        globalKey.currentContext.findRenderObject() as RenderRepaintBoundary;
-    ui.Image image = await boundary.toImage();
-    ByteData byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    Uint8List pngBytes = byteData.buffer.asUint8List();
-    final directory = (await getApplicationDocumentsDirectory()).path;
-
-    File imgFile = new File('$directory/$title.png');
-    print(imgFile.path);
-    imgFile.writeAsBytes(pngBytes);
   }
 }

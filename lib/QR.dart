@@ -4,16 +4,17 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import 'app/AppColors.dart';
-
 class QR extends StatelessWidget {
   final String message;
+  final Color color;
 
-  const QR({@required this.message});
+  const QR({
+    required this.message,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,15 +29,11 @@ class QR extends StatelessWidget {
           size: Size.square(size),
           painter: QrPainter(
             data: message,
-            // version: 5, //QrVersions.min,
             version: QrVersions.auto,
-            eyeStyle: const QrEyeStyle(
-              eyeShape: QrEyeShape.square,
-              color: AppColors.darkBlue,
-            ),
-            dataModuleStyle: const QrDataModuleStyle(
+            eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: color),
+            dataModuleStyle: QrDataModuleStyle(
               dataModuleShape: QrDataModuleShape.square,
-              color: AppColors.darkBlue,
+              color: color,
             ),
             //Quality
             errorCorrectionLevel: 3,
