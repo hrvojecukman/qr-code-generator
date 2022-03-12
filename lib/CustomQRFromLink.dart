@@ -49,7 +49,7 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Form(
                       key: _formKey,
@@ -76,61 +76,63 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 50),
-                    MyTextFormField(
-                      textEditingController: colorTextEditingController,
-                      hint: 'Enter HEX color',
-                      onChanged: (newValue) {
-                        setState(() {
-                          color = Color(
-                            int.tryParse("FF$newValue", radix: 16) ??
-                                int.parse(defaultHex, radix: 16),
-                          );
-                        });
-                      },
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5.0),
-                      child: MaterialButton(
-                        height: 100,
-                        color: color,
-                        minWidth: double.infinity,
-                        onPressed: () {
-                          void changeColor(Color color) {
-                            setState(() => pickerColor = color);
-                          }
+                    Column(
+                      children: [
+                        MyTextFormField(
+                          textEditingController: colorTextEditingController,
+                          hint: 'Enter HEX color',
+                          onChanged: (newValue) {
+                            setState(() {
+                              color = Color(
+                                int.tryParse("FF$newValue", radix: 16) ??
+                                    int.parse(defaultHex, radix: 16),
+                              );
+                            });
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5.0),
+                          child: MaterialButton(
+                            height: 100,
+                            color: color,
+                            minWidth: double.infinity,
+                            onPressed: () {
+                              void changeColor(Color color) {
+                                setState(() => pickerColor = color);
+                              }
 
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Pick a color!'),
-                                content: SingleChildScrollView(
-                                  child: ColorPicker(
-                                    pickerColor: pickerColor,
-                                    onColorChanged: changeColor,
-                                  ),
-                                ),
-                                actions: <Widget>[
-                                  ElevatedButton(
-                                    child: const Text('Pick'),
-                                    onPressed: () {
-                                      setState(() => color = pickerColor);
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                ],
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: const Text('Pick a color!'),
+                                    content: SingleChildScrollView(
+                                      child: ColorPicker(
+                                        pickerColor: pickerColor,
+                                        onColorChanged: changeColor,
+                                      ),
+                                    ),
+                                    actions: <Widget>[
+                                      ElevatedButton(
+                                        child: const Text('Pick'),
+                                        onPressed: () {
+                                          setState(() => color = pickerColor);
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                        child: Text("or tap to pick"),
-                      ),
+                            child: Text("or tap to pick"),
+                          ),
+                        ),
+                        Text("Value: ${color.value.toRadixString(16)}"),
+                      ],
                     ),
-                    Text("Value: ${color.value.toRadixString(16)}"),
-                    const SizedBox(height: 50),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         MaterialButton(
                           onPressed: () async {
@@ -153,6 +155,7 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
                           child: Text("Pick file"),
                           color: Colors.blue,
                         ),
+                        const SizedBox(height: 10),
                         MaterialButton(
                           onPressed: () {
                             setState(() {
@@ -162,6 +165,7 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
                           child: Text("Clear file"),
                           color: Colors.blue,
                         ),
+                        const SizedBox(height: 10),
                       ],
                     ),
                   ],
@@ -189,7 +193,7 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         isExtended: true,
         onPressed: () {
           final currentState = _formKey.currentState;
@@ -201,7 +205,7 @@ class _CustomQRFromLinkState extends State<CustomQRFromLink> with SaveImage {
             );
           }
         },
-        child: const Text('Save'),
+        label: const Text('Download'),
       ),
     );
   }
